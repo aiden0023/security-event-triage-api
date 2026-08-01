@@ -47,7 +47,7 @@ class TestConfig(BaseConfig):
     SECRET_KEY = secrets.token_urlsafe(32)
     JWT_SECRET_KEY = secrets.token_urlsafe(32)
     SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "TEST_DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5433/triage_test"
+        "TEST_DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/triage_test"
     )
     # Off by default so unrelated tests do not trip limits. Rate-limit test re-enables this in
     # a separate app
