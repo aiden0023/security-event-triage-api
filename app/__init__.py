@@ -1,0 +1,46 @@
+import os
+
+from flask import Flask
+
+from app.config import config_by_name
+from app.extensions import db, jwt, limiter, migrate
+
+
+def create_app(config_name: str | None = None) -> Flask:
+    """Build an instance of the Flask application."""
+    app = Flask(__name__)
+
+    config_name = config_name or os.environ.get("APP_CONFIG", "dev")
+    if config_name not in config_by_name:
+        raise RuntimeError(f"Unknown config name: {config_name}")
+    app.config.from_object(config_by_name[config_name])
+
+    _verify_required_settings(app)
+    _register_extensions(app)
+    _register_blueprints(app)
+
+    return app
+
+
+def _verify_required_settings(app: Flask) -> None:
+    missing = [name for name in app.config.get("REQUIRED_SETTINGS", ()) if not app.config.get(name)]
+    if missing:
+        raise RuntimeError(f"Missing required settings: {missing}")
+
+
+def _register_extensions(app: Flask) -> None:
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    limiter.init_app(app)
+
+    # Imported for the side effect of registering models on Base.metadata
+    from app import models  # noqa: F401
+
+
+def _register_blueprints(app: Flask) -> None:
+    # Defer imports to call time to make sure every module is fully loaded before
+    # any route is imported
+    from app.routes.health import bp as health_bp
+
+    app.register_blueprint(health_bp)
