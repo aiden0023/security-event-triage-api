@@ -14,10 +14,13 @@ def create_app(config_name: str | None = None) -> Flask:
     if config_name not in config_by_name:
         raise RuntimeError(f"Unknown config name: {config_name}")
     app.config.from_object(config_by_name[config_name])
+    app.config["CONFIG_NAME"] = config_name
 
     _verify_required_settings(app)
     _register_extensions(app)
+    _register_error_handlers(app)
     _register_blueprints(app)
+    _register_cli(app)
 
     return app
 
@@ -42,5 +45,16 @@ def _register_blueprints(app: Flask) -> None:
     # Defer imports to call time to make sure every module is fully loaded before
     # any route is imported
     from app.routes.health import bp as health_bp
-
     app.register_blueprint(health_bp)
+
+
+def _register_cli(app: Flask) -> None:
+    # Defer imports to call time to make sure models and db are imported first.
+    from app.cli import register_cli
+    register_cli(app)
+
+
+def _register_error_handlers(app: Flask) -> None:
+    # Deferred import
+    from app.errors import register_error_handlers
+    register_error_handlers(app)
