@@ -16,7 +16,12 @@ class BaseConfig:
 
     # --- SQLAlchemy ---
     SQLALCHEMY_DATABASE_URI = os.environ.get("DATABASE_URL")
-    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_size": 5, "max_overflow": 10}
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_size": 5,
+        "max_overflow": 10,
+        "connect_args": {"options": "-c timezone=utc"},
+    }
 
     # --- Auth ---
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")

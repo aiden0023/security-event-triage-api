@@ -6,7 +6,6 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase
 
-
 NAMING_CONVENTION = {
     "ix": "ix_%(table_name)s_%(column_0_N_name)s",
     "uq": "uq_%(table_name)s_%(column_0_N_name)s",
@@ -18,7 +17,7 @@ NAMING_CONVENTION = {
 
 class Base(DeclarativeBase):
     """Base class for all SQLAlchemy models."""
-    meta = MetaData(naming_convention=NAMING_CONVENTION)
+    metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 
 db = SQLAlchemy(model_class=Base)
