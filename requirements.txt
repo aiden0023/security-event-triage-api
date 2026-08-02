@@ -9,6 +9,7 @@ psycopg[binary]~=3.3
 
 # --- Validation / serialization ---
 pydantic~=2.13
+pydantic[email]~=2.13
 
 # --- Auth & abuse controls ---
 Flask-JWT-Extended~=4.7

@@ -2,7 +2,7 @@ import logging
 import uuid
 from typing import Any
 
-from flask import Response, g, jsonify, current_app, Flask
+from flask import Flask, Response, current_app, g, jsonify
 from pydantic import ValidationError
 from werkzeug.exceptions import HTTPException
 
@@ -118,6 +118,7 @@ def register_error_handlers(app: Flask) -> None:
         return error_response(exc.status_code, exc.code, exc.message, exc.details)
 
     # For validation errors
+    @app.errorhandler(ValidationError)
     def _handle_validation_error(exc: ValidationError) -> tuple[Response, int]:
         return error_response(
             422, "validation_failed", "The request body failed validation.",
