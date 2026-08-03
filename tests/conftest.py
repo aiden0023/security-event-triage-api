@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from itertools import count
 
 import pytest
@@ -10,14 +11,17 @@ from sqlalchemy.orm import Session
 
 from app import create_app
 from app.extensions import db as _db
-from app.models import Organization, User
-from app.models.user import ROLE_ANALYST, ROLE_ADMIN
+from app.models import Organization, SecurityEvent, User
+from app.models.security_event import SEVERITY_MEDIUM, STATUS_NEW
+from app.models.user import ROLE_ADMIN, ROLE_ANALYST
 from app.services.password import hash_password
 
 TEST_PASSWORD = "test-password"
 _TEST_PASSWORD_HASH = hash_password(TEST_PASSWORD)
+_EVENT_BASE_TIME = datetime(2026, 1, 1, tzinfo=UTC)
 _org_counter = count(1)
 _user_counter = count(1)
+_event_counter = count(1)
 
 
 @pytest.fixture(scope="session")
@@ -75,6 +79,44 @@ def make_user(session: Session) -> Callable[..., User]:
         session.add(user)
         session.flush()
         return user
+    return _make
+
+
+@pytest.fixture
+def make_event(session: Session) -> Callable[..., SecurityEvent]:
+    def _make(
+        *,
+        org: Organization,
+        occurred_at: datetime | None = None,
+        severity: str = SEVERITY_MEDIUM,
+        status: str = STATUS_NEW,
+        source: str = "pytest",
+        external_id: str | None = None,
+        title: str = "Test Event",
+        event_type: str = "test",
+        source_ip: str | None = None,
+        description: str | None = None,
+        assigned_to: User | None = None,
+        raw: dict | None = None,
+    ) -> SecurityEvent:
+        n = next(_event_counter)
+        event = SecurityEvent(
+            org_id=org.id,
+            source=source,
+            external_id=external_id or f"evt-{n}",
+            title=title,
+            event_type=event_type,
+            severity=severity,
+            status=status,
+            source_ip=source_ip,
+            description=description,
+            raw=raw if raw is not None else {},
+            occurred_at=occurred_at or (_EVENT_BASE_TIME + timedelta(minutes=n)),
+            assigned_to_id=assigned_to.id if assigned_to else None,
+        )
+        session.add(event)
+        session.flush()
+        return event
     return _make
 
 

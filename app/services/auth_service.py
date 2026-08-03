@@ -1,8 +1,8 @@
 from flask import current_app
 from flask_jwt_extended import create_access_token
 
-from app import db
 from app.errors import AuthenticationError
+from app.extensions import db
 from app.models import User
 from app.schemas.auth import TokenResponse
 from app.services.password import hash_password, verify_password

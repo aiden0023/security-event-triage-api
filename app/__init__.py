@@ -48,9 +48,11 @@ def _register_blueprints(app: Flask) -> None:
     # Defer imports to call time to make sure every module is fully loaded before
     # any route is imported
     from app.routes.auth import bp as auth_bp
+    from app.routes.events import bp as events_bp
     from app.routes.health import bp as health_bp
     app.register_blueprint(health_bp)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(events_bp)
 
 
 def _register_cli(app: Flask) -> None:
