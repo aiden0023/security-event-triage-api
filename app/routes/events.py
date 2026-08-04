@@ -1,7 +1,8 @@
 from flask import Blueprint, request
 from flask_jwt_extended import current_user, jwt_required
 
-from app.schemas.events import EventIngest, EventQuery, EventResponse
+from app.errors import NotFoundError
+from app.schemas.events import EventDetail, EventIngest, EventQuery, EventResponse
 from app.services import event_service
 
 bp = Blueprint("events", __name__, url_prefix="/api/events")
@@ -22,3 +23,12 @@ def list_events():
     query = EventQuery.model_validate(request.args.to_dict())
     page = event_service.list_events_page(current_user.org_id, query)
     return page.model_dump(mode="json"), 200
+
+
+@bp.get("/<int:event_id>")
+@jwt_required()
+def get_event(event_id: int):
+    event = event_service.find_event(current_user.org_id, event_id)
+    if event is None:
+        raise NotFoundError("Event not found.")
+    return EventDetail.model_validate(event).model_dump(mode="json"), 200

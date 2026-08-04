@@ -1,6 +1,7 @@
+import logging
 from datetime import datetime
 
-from flask import current_app
+from flask import current_app, g
 from sqlalchemy import tuple_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
@@ -8,6 +9,8 @@ from app.extensions import db
 from app.models import SecurityEvent
 from app.pagination import decode_cursor, encode_cursor
 from app.schemas.events import EventIngest, EventPage, EventQuery
+
+logger = logging.getLogger(__name__)
 
 
 def ingest(org_id: int, payload: EventIngest) -> tuple[SecurityEvent, bool]:
@@ -80,3 +83,36 @@ def list_events_page(org_id: int, query: EventQuery) -> EventPage:
     )
     next_cursor = encode_cursor(events[-1].occurred_at, events[-1].id) if has_more else None
     return EventPage(items=events, next_cursor=next_cursor, has_more=has_more)
+
+
+def find_event(org_id: int, event_id: int) -> SecurityEvent | None:
+    """Find an event scoped to an org. Returns None if event is missing
+    OR is owned by a different org."""
+    event = db.session.scalar(
+        db.select(SecurityEvent).where(
+            SecurityEvent.id == event_id,
+            SecurityEvent.org_id == org_id
+        )
+    )
+    if event is None:
+        _log_lookup_miss(org_id, event_id)
+    return event
+
+
+def _log_lookup_miss(org_id: int, event_id: int) -> None:
+    """Server-side only: was this a real 404, or a blocked cross-tenant read?"""
+    owner_org_id = db.session.scalar(
+        db.select(SecurityEvent.org_id).where(SecurityEvent.id == event_id)
+    )
+
+    context = {
+        "request_id": g.get("request_id"),
+        "actor_org_id": org_id,
+        "event_id": event_id,
+        "owner_org_id": owner_org_id,
+    }
+
+    if owner_org_id is not None:
+        logger.warning("event_lookup_denied", extra=context)
+    else:
+        logger.info("event_lookup_missing", extra=context)
